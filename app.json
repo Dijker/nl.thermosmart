@@ -1,0 +1,48 @@
+{
+	"id": "nl.thermosmart",
+	"version": "1.0",
+	"name": {
+		"en": "ThermoSmart"
+	},
+	"description": {
+		"en": "The smart Wi-Fi thermostat",
+		"nl": "De slimme Wi-Fi thermostaat"
+	},
+	"author": {
+		"name": "Emile Nijssen",
+		"website": "http://www.emilenijssen.nl"
+	},
+	"images": {
+		"large": "large.jpg",
+		"small": "small.jpg"
+	},
+	"drivers": [
+		{
+			"id": "thermostat",
+			"name": {
+				"en": "ThermoSmart"
+			},
+			"category": "climate",
+			"capabilities": [ "measure_temperature" ],
+			"pair": [
+				{
+					"id": "start"
+				},
+				{
+					"id": "list_devices",
+					"template": "list_devices",
+					"navigation": {
+						"next": "add_stations"
+					}
+				},
+				{
+					"id": "add_stations",
+					"template": "add_devices"
+				}
+			]
+		}
+	],
+	"dependencies": {
+		"request": "*"
+	}
+}
