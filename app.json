@@ -22,8 +22,8 @@
 			"name": {
 				"en": "ThermoSmart"
 			},
-			"category": "climate",
-			"capabilities": [ "measure_temperature" ],
+			"class": "thermostat",
+			"capabilities": [ "target_temperature", "measure_temperature" ],
 			"pair": [
 				{
 					"id": "start"
