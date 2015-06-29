@@ -24,14 +24,16 @@ var self = {
 		}
 	},
 	
-	"temperature.target": {
-		get: function( device, name, callback ){
-			getThermosmartInfo( device, function(info){
-				callback( info.target_temperature );
-			});
-		},
-		set: function( device, name, callback ){
-			
+	capabilities: {
+		target_temperature: {
+			get: function( device, name, callback ){
+				getThermosmartInfo( device, function(info){
+					callback( info.target_temperature );
+				});
+			},
+			set: function( device, name, callback ){
+				
+			}
 		}
 	},
 	
