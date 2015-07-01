@@ -13,7 +13,7 @@ var pairing			= {};
 		
 var self = {
 	
-	init: function( callback ){
+	init: function( devices, callback ){
 		// we're ready
 		callback();
 	},
