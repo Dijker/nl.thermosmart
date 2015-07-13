@@ -26,13 +26,22 @@ var self = {
 	
 	capabilities: {
 		target_temperature: {
-			get: function( device, name, callback ){
+			get: function( device, callback ){
 				getThermosmartInfo( device, function(info){
 					callback( info.target_temperature );
 				});
 			},
-			set: function( device, name, callback ){
-				
+			set: function( device, target_temperature, callback ){
+				setThermosmartInfo( device, {
+					target_temperature: target_temperature
+				}, callback)				
+			}
+		},
+		measure_temperature: {
+			get: function( device, callback ){
+				getThermosmartInfo( device, function(info){
+					callback( info.room_temperature );
+				});
 			}
 		}
 	},
@@ -94,10 +103,12 @@ var thermosmartInfoCache = {
 	data: {}
 };
 
-function getThermosmartInfo( device, callback ) {
+function getThermosmartInfo( device, force, callback ) {
+	
+	if( typeof force == 'function' ) callback = force;
 	
 	// serve the cache for at maximum 5 minutes
-	if( ((new Date) - thermosmartInfoCache.updated_at) < 1000 * 60 * 5 ) {
+	if( !force && ((new Date) - thermosmartInfoCache.updated_at) < 1000 * 60 * 5 ) {
 		callback(thermosmartInfoCache.data);
 	} else {
 		call({
@@ -126,7 +137,7 @@ function setThermosmartInfo( device, json, callback ) {
 		if( err ) return callback(err);
 		
 		// update thermosmart info
-		getThermosmartInfo( device, callback );
+		getThermosmartInfo( device, true, callback );
 		
 	});	
 }
