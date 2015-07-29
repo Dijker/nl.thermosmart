@@ -1,6 +1,7 @@
 {
 	"id": "nl.thermosmart",
-	"version": "1.0",
+	"version": "1.0.0",
+	"compatibility": "0.x || 1.x",
 	"name": {
 		"en": "ThermoSmart"
 	},
@@ -13,8 +14,7 @@
 		"website": "http://www.emilenijssen.nl"
 	},
 	"images": {
-		"large": "large.jpg",
-		"small": "small.jpg"
+		"large": "assets/images/large.jpg"
 	},
 	"drivers": [
 		{

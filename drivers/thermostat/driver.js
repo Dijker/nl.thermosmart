@@ -20,7 +20,7 @@ var self = {
 	
 	name: {
 		set: function( device, name, callback ) {
-			// A ThermoSmart device does not have a name
+			// A ThermoSmart device does not have a name, so we can ignore this
 		}
 	},
 	
@@ -34,7 +34,8 @@ var self = {
 			set: function( device, target_temperature, callback ){
 				setThermosmartInfo( device, {
 					target_temperature: target_temperature
-				}, callback)				
+				}, callback)
+				self.realtime(device, 'target_temperature', target_temperature)			
 			}
 		},
 		measure_temperature: {
