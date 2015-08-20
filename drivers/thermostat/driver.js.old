@@ -6,7 +6,6 @@ var request			= require('request');
 var extend			= require('extend');
 
 var api_url			= 'https://api.thermosmart.com';
-var redirect_uri	= 'https://callback.athom.com/oauth2/callback/';
 
 var config			= require( path.join(Homey.paths.root, 'config.json') );
 
@@ -50,51 +49,34 @@ var self = {
 	
 	pair: {
 		start: function( callback, emit, data ){
+			
+			callback({
+				client_id: config.client_id
+			});
 						
-			Homey.log('ThermoSmart pairing has started...');
+			Homey.log('ThermoSmart pairing has started');
 			
-			// request an authorization url, and forward it to the front-end
-			Homey.manager('cloud').generateOAuth2Callback(
-				
-				// this is the app-specific authorize url
-				"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + config.client_id + "&redirect_uri=" + redirect_uri,
-				
-				// this function is executed when we got the url to redirect the user to
-				function( err, url ){
-					Homey.log('Got url!', url);
-					emit( 'url', url );
-				},
-				
-				// this function is executed when the authorization code is received (or failed to do so)
-				function( err, code ) {
-					
-					if( err ) {
-						Homey.error(err);
-						emit( 'authorized', false )
-						return;
-					}
-					
-					Homey.log('Got authorization code!', code);
-				
-					// swap the authorization code for a token					
-					request.post( api_url + '/oauth2/token', {
-						form: {
-							'client_id'		: config.client_id,
-							'client_secret'	: config.client_secret,
-							'code'			: code,
-							'redirect_uri'	: redirect_uri,
-							'grant_type'	: 'authorization_code'
-						},
-						json: true
-					}, function( err, response, body ){
-						if( err || body.error ) return emit( 'authorized', false );
-						pairing.access_token	= body.access_token;
-						pairing.thermostat		= body.thermostat;
-						emit( 'authorized', true );
-					});
-				}
-			)
+		},
+		
+		authorized: function( callback, emit, data ) {
 			
+			var form = {
+				'client_id'		: config.client_id,
+				'client_secret'	: config.client_secret,
+				'code'			: data.code,
+				'redirect_uri'	: data.redirect_uri,
+				'grant_type'	: 'authorization_code'
+			};
+			
+			request.post( api_url + '/oauth2/token', {
+				form: form,
+				json: true
+			}, function( err, response, body ){
+				if( body.error ) return callback( false );	
+				pairing.access_token	= body.access_token;
+				pairing.thermostat		= body.thermostat;
+				callback( true );
+			});
 		},
 	
 		list_devices: function( callback, emit, data ) {

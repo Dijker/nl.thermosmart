@@ -13,8 +13,10 @@
 		"name": "Emile Nijssen",
 		"website": "http://www.emilenijssen.nl"
 	},
+	"category": "climate",
 	"images": {
-		"large": "assets/images/large.jpg"
+		"large": "assets/images/large.jpg",
+		"small": "assets/images/small.png"
 	},
 	"drivers": [
 		{
@@ -24,6 +26,10 @@
 			},
 			"class": "thermostat",
 			"capabilities": [ "target_temperature", "measure_temperature" ],
+			"images": {
+				"large": "drivers/thermostat/assets/images/large.png",
+				"small": "drivers/thermostat/assets/images/small.png"
+			},
 			"pair": [
 				{
 					"id": "start"
