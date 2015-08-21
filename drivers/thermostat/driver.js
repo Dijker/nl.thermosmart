@@ -31,6 +31,10 @@ var self = module.exports = {
 				});
 			},
 			set: function( device, target_temperature, callback ){
+				
+				if( target_temperature < 5 ) target_temperature = 5;
+				if( target_temperature > 30 ) target_temperature = 30;
+				
 				setThermosmartInfo( device, {
 					target_temperature: target_temperature
 				}, callback)
