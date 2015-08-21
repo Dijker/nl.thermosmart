@@ -17,12 +17,6 @@ var self = module.exports = {
 		callback();
 	},
 	
-	name: {
-		set: function( device, name, callback ) {
-			// A ThermoSmart device does not have a name, so we can ignore this
-		}
-	},
-	
 	capabilities: {
 		target_temperature: {
 			get: function( device, callback ){
