@@ -1,12 +1,7 @@
 "use strict";
   
-function App() 
-{
+var self = module.exports = {
+	init: function(){
 		
-}
-
-module.exports = App;
-
-App.prototype.init = function(){
-	
+	}
 }

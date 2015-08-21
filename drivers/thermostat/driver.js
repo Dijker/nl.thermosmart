@@ -10,7 +10,7 @@ var redirect_uri	= 'https://callback.athom.com/oauth2/callback/';
 
 var pairing			= {};
 		
-var self = {
+var self = module.exports = {
 	
 	init: function( devices, callback ){
 		// we're ready
@@ -184,5 +184,3 @@ function call( options, callback ) {
 	}, callback);
 	
 }
-
-module.exports = self;
