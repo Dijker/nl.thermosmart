@@ -8,8 +8,6 @@ var extend			= require('extend');
 var api_url			= 'https://api.thermosmart.com';
 var redirect_uri	= 'https://callback.athom.com/oauth2/callback/';
 
-var config			= require( path.join(Homey.paths.root, 'config.json') );
-
 var pairing			= {};
 		
 var self = {
@@ -57,7 +55,7 @@ var self = {
 			Homey.manager('cloud').generateOAuth2Callback(
 				
 				// this is the app-specific authorize url
-				"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + config.client_id + "&redirect_uri=" + redirect_uri,
+				"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + Homey.env.client_id + "&redirect_uri=" + redirect_uri,
 				
 				// this function is executed when we got the url to redirect the user to
 				function( err, url ){
@@ -79,8 +77,8 @@ var self = {
 					// swap the authorization code for a token					
 					request.post( api_url + '/oauth2/token', {
 						form: {
-							'client_id'		: config.client_id,
-							'client_secret'	: config.client_secret,
+							'client_id'		: Homey.env.client_id,
+							'client_secret'	: Homey.env.client_secret,
 							'code'			: code,
 							'redirect_uri'	: redirect_uri,
 							'grant_type'	: 'authorization_code'
