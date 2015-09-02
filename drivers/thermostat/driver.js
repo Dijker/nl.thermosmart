@@ -13,6 +13,33 @@ var pairing			= {};
 var self = module.exports = {
 	
 	init: function( devices, callback ){
+		
+		devices.forEach(function(device){
+			registerWebhook( device.id, function( args ){
+				
+				// on webhook
+				// get local thermosmart info
+				getThermosmartInfo( device, function(info){
+					
+					if( args.body.target_temperature != info.target_temperature ) {
+						setThermosmartInfo( device, {
+							target_temperature: args.body.target_temperature
+						}, callback)
+						self.realtime(device, 'target_temperature', args.body.target_temperature)								
+					}
+					
+					if( args.body.room_temperature != info.measure_temperature ) {
+						setThermosmartInfo( device, {
+							measure_temperature: args.body.room_temperature
+						}, callback)
+						self.realtime(device, 'measure_temperature', args.body.room_temperature)								
+					}
+										
+				});
+			
+			});
+		});
+		
 		// we're ready
 		callback();
 	},
@@ -28,6 +55,8 @@ var self = module.exports = {
 				
 				if( target_temperature < 5 ) target_temperature = 5;
 				if( target_temperature > 30 ) target_temperature = 30;
+				
+				target_temperature = roundHalf( target_temperature );
 				
 				setThermosmartInfo( device, {
 					target_temperature: target_temperature
@@ -45,6 +74,7 @@ var self = module.exports = {
 	},
 	
 	pair: {
+		
 		start: function( callback, emit, data ){
 						
 			Homey.log('ThermoSmart pairing has started...');
@@ -181,4 +211,14 @@ function call( options, callback ) {
 		}
 	}, callback);
 	
+}
+
+function registerWebhook( thermosmart_id, callbackMessage, callback ) {
+	Homey.manager('cloud').registerWebhook( Homey.env.webhook_id, Homey.env.webhook_secret, {
+		thermosmart_id: thermosmart_id
+	}, callbackMessage, callback);
+}
+
+function roundHalf(num) {
+    return Math.round(num*2)/2;
 }
