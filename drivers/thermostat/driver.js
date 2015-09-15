@@ -83,7 +83,7 @@ var self = module.exports = {
 			Homey.manager('cloud').generateOAuth2Callback(
 				
 				// this is the app-specific authorize url
-				"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + Homey.env.client_id + "&redirect_uri=" + redirect_uri,
+				"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
 				
 				// this function is executed when we got the url to redirect the user to
 				function( err, url ){
@@ -105,8 +105,8 @@ var self = module.exports = {
 					// swap the authorization code for a token					
 					request.post( api_url + '/oauth2/token', {
 						form: {
-							'client_id'		: Homey.env.client_id,
-							'client_secret'	: Homey.env.client_secret,
+							'client_id'		: Homey.env.CLIENT_ID,
+							'client_secret'	: Homey.env.CLIENT_SECRET,
 							'code'			: code,
 							'redirect_uri'	: redirect_uri,
 							'grant_type'	: 'authorization_code'
@@ -214,7 +214,7 @@ function call( options, callback ) {
 }
 
 function registerWebhook( thermosmart_id, callbackMessage, callback ) {
-	Homey.manager('cloud').registerWebhook( Homey.env.webhook_id, Homey.env.webhook_secret, {
+	Homey.manager('cloud').registerWebhook( Homey.env.WEBHOOK_ID, Homey.env.WEBHOOK_SECRET, {
 		thermosmart_id: thermosmart_id
 	}, callbackMessage, callback);
 }
