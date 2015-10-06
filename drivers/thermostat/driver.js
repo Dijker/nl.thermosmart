@@ -19,7 +19,9 @@ var self = module.exports = {
 				
 				// on webhook
 				// get local thermosmart info
-				getThermosmartInfo( device, function(info){
+				getThermosmartInfo( device, function( err, info ){
+					
+					if( err ) return;
 					
 					if( args.body.target_temperature != info.target_temperature ) {
 						setThermosmartInfo( device, {
@@ -47,8 +49,8 @@ var self = module.exports = {
 	capabilities: {
 		target_temperature: {
 			get: function( device, callback ){
-				getThermosmartInfo( device, function(info){
-					callback( info.target_temperature );
+				getThermosmartInfo( device, function( err, info ){
+					callback( err, info.target_temperature );
 				});
 			},
 			set: function( device, target_temperature, callback ){
@@ -66,8 +68,8 @@ var self = module.exports = {
 		},
 		measure_temperature: {
 			get: function( device, callback ){
-				getThermosmartInfo( device, function(info){
-					callback( info.room_temperature );
+				getThermosmartInfo( device, function( err, info ){
+					callback( err, info.room_temperature );
 				});
 			}
 		}
@@ -165,7 +167,7 @@ function getThermosmartInfo( device, force, callback ) {
 			thermosmartInfoCache.updated_at = new Date();
 			thermosmartInfoCache.data = body;
 			
-			callback(thermosmartInfoCache.data);
+			callback( null, thermosmartInfoCache.data );
 			
 		});
 	}
