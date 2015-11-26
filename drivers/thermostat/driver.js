@@ -7,13 +7,11 @@ var extend			= require('extend');
 
 var api_url			= 'https://api.thermosmart.com';
 var redirect_uri	= 'https://callback.athom.com/oauth2/callback/';
-
-var pairing			= {};
 		
 var self = module.exports = {
 	
 	init: function( devices, callback ){
-		
+				
 		devices.forEach(function(device){
 			registerWebhook( device.id, function( args ){
 				
@@ -40,6 +38,24 @@ var self = module.exports = {
 				});
 			
 			});
+			
+			/*
+			setInterval(function(){
+				console.log('setUnavailable')				
+				module.exports.setUnavailable( device, "Whateva", function(){
+					console.log('setUnavailable cb', arguments)
+				})
+				
+				setTimeout(function(){					
+					console.log('setAvailable')				
+					module.exports.setAvailable( device, function(){
+						console.log('setAvailable cb', arguments)
+					})
+				}, 2500);
+				
+			}, 5000);
+			*/
+			
 		});
 		
 		// we're ready
@@ -48,7 +64,7 @@ var self = module.exports = {
 	
 	capabilities: {
 		target_temperature: {
-			get: function( device, callback ){
+			get: function( device, callback ){				
 				getThermosmartInfo( device, function( err, info ){
 					callback( err, info.target_temperature );
 				});
@@ -75,72 +91,69 @@ var self = module.exports = {
 		}
 	},
 	
-	pair: {
+	pair: function( socket ) {
+								
+		Homey.log('ThermoSmart pairing has started...');
 		
-		start: function( callback, emit, data ){
-						
-			Homey.log('ThermoSmart pairing has started...');
+		var access_token;
+		var thermostat;
+		
+		// request an authorization url, and forward it to the front-end
+		Homey.manager('cloud').generateOAuth2Callback(
 			
-			// request an authorization url, and forward it to the front-end
-			Homey.manager('cloud').generateOAuth2Callback(
+			// this is the app-specific authorize url
+			"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
+			
+			// this function is executed when we got the url to redirect the user to
+			function( err, url ){
+				Homey.log('Got url!', url);
+				socket.emit( 'url', url );
+			},
+			
+			// this function is executed when the authorization code is received (or failed to do so)
+			function( err, code ) {
 				
-				// this is the app-specific authorize url
-				"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
-				
-				// this function is executed when we got the url to redirect the user to
-				function( err, url ){
-					Homey.log('Got url!', url);
-					emit( 'url', url );
-				},
-				
-				// this function is executed when the authorization code is received (or failed to do so)
-				function( err, code ) {
-					
-					if( err ) {
-						Homey.error(err);
-						emit( 'authorized', false )
-						return;
-					}
-					
-					Homey.log('Got authorization code!', code);
-				
-					// swap the authorization code for a token					
-					request.post( api_url + '/oauth2/token', {
-						form: {
-							'client_id'		: Homey.env.CLIENT_ID,
-							'client_secret'	: Homey.env.CLIENT_SECRET,
-							'code'			: code,
-							'redirect_uri'	: redirect_uri,
-							'grant_type'	: 'authorization_code'
-						},
-						json: true
-					}, function( err, response, body ){
-						if( err || body.error ) return emit( 'authorized', false );
-						pairing.access_token	= body.access_token;
-						pairing.thermostat		= body.thermostat;
-						emit( 'authorized', true );
-					});
+				if( err ) {
+					Homey.error(err);
+					socket.emit( 'authorized', false )
+					return;
 				}
-			)
+				
+				Homey.log('Got authorization code!', code);
 			
-		},
+				// swap the authorization code for a token					
+				request.post( api_url + '/oauth2/token', {
+					form: {
+						'client_id'		: Homey.env.CLIENT_ID,
+						'client_secret'	: Homey.env.CLIENT_SECRET,
+						'code'			: code,
+						'redirect_uri'	: redirect_uri,
+						'grant_type'	: 'authorization_code'
+					},
+					json: true
+				}, function( err, response, body ){
+					if( err || body.error ) return socket.emit( 'authorized', false );
+					access_token	= body.access_token;
+					thermostat		= body.thermostat;
+					socket.emit( 'authorized', true );
+				});
+			}
+		)
 	
-		list_devices: function( callback, emit, data ) {
+		socket.on('list_devices', function( data, callback ) {
 						
 			var devices = [{
 				data: {
-					id				: pairing.thermostat,
-					access_token	: pairing.access_token
+					id				: thermostat,
+					access_token	: access_token
 				},
-				name: pairing.thermostat
+				name: thermostat
 				
 			}];
 			
-			callback( devices );
-			
-			pairing = {};
+			callback( null, devices );
 							
-		},
+		});
 	}
 	
 }

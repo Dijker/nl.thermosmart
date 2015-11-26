@@ -2,6 +2,5 @@
   
 var self = module.exports = {
 	init: function(){
-		
 	}
 }

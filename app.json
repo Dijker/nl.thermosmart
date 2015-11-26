@@ -1,7 +1,7 @@
 {
 	"id": "nl.thermosmart",
 	"version": "1.0.1",
-	"compatibility": "0.x || 1.x",
+	"compatibility": "*",
 	"name": {
 		"en": "ThermoSmart"
 	},
