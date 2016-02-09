@@ -1,6 +1,6 @@
 {
 	"id": "nl.thermosmart",
-	"version": "1.0.1",
+	"version": "1.0.3",
 	"compatibility": "*",
 	"name": {
 		"en": "ThermoSmart"
@@ -10,13 +10,13 @@
 		"nl": "De slimme Wi-Fi thermostaat"
 	},
 	"author": {
-		"name": "Emile Nijssen",
-		"website": "http://www.emilenijssen.nl"
+		"name": "Athom B.V.",
+		"website": "info@athom.com"
 	},
 	"category": "climate",
 	"images": {
 		"large": "assets/images/large.jpg",
-		"small": "assets/images/small.png"
+		"small": "assets/images/small.jpg"
 	},
 	"drivers": [
 		{

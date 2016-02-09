@@ -37,7 +37,8 @@ var self = module.exports = {
 										
 				});
 			
-			});			
+			});
+			
 		});
 		
 		// we're ready
@@ -84,7 +85,7 @@ var self = module.exports = {
 		Homey.manager('cloud').generateOAuth2Callback(
 			
 			// this is the app-specific authorize url
-			"https://api.thermosmart.com/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
+			api_url + "/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
 			
 			// this function is executed when we got the url to redirect the user to
 			function( err, url ){
