@@ -37,25 +37,7 @@ var self = module.exports = {
 										
 				});
 			
-			});
-			
-			/*
-			setInterval(function(){
-				console.log('setUnavailable')				
-				module.exports.setUnavailable( device, "Whateva", function(){
-					console.log('setUnavailable cb', arguments)
-				})
-				
-				setTimeout(function(){					
-					console.log('setAvailable')				
-					module.exports.setAvailable( device, function(){
-						console.log('setAvailable cb', arguments)
-					})
-				}, 2500);
-				
-			}, 5000);
-			*/
-			
+			});			
 		});
 		
 		// we're ready
@@ -133,6 +115,7 @@ var self = module.exports = {
 					json: true
 				}, function( err, response, body ){
 					if( err || body.error ) return socket.emit( 'authorized', false );
+					Homey.log('Authorized')
 					access_token	= body.access_token;
 					thermostat		= body.thermostat;
 					socket.emit( 'authorized', true );
@@ -154,6 +137,10 @@ var self = module.exports = {
 			callback( null, devices );
 							
 		});
+		
+		socket.on('disconnect', function( data, callback ){
+			console.log('disconnect!!!', arguments)
+		})
 	}
 	
 }
