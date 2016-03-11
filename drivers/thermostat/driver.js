@@ -3,108 +3,145 @@
 var path			= require('path');
 
 var request			= require('request');
-var extend			= require('extend');
+var extend			= require('util')._extend;
 
 var api_url			= 'https://api.thermosmart.com';
 var redirect_uri	= 'https://callback.athom.com/oauth2/callback/';
-		
+
+var devices = {};
+
 var self = module.exports = {
-	
-	init: function( devices, callback ){
-				
-		devices.forEach(function(device){
-			registerWebhook( device.id, function( args ){
-				
-				// on webhook
-				// get local thermosmart info
-				getThermosmartInfo( device, function( err, info ){
-					
-					if( err ) return;
-					
-					if( args.body.target_temperature != info.target_temperature ) {
-						setThermosmartInfo( device, {
-							target_temperature: args.body.target_temperature
-						}, callback)
-						self.realtime(device, 'target_temperature', args.body.target_temperature)								
-					}
-					
-					if( args.body.room_temperature != info.measure_temperature ) {
-						setThermosmartInfo( device, {
-							measure_temperature: args.body.room_temperature
-						}, callback)
-						self.realtime(device, 'measure_temperature', args.body.room_temperature)								
-					}
-										
-				});
-			
-			});
-			
-		});
-		
+
+	init: function( devices_data, callback ){
+
+		devices_data.forEach(initDevice);
+
 		// we're ready
 		callback();
+
+		Homey.manager('flow').on('action.set_pause_true', function( callback, args ){
+			call({
+				method			: 'POST',
+				path			: '/thermostat/' + args.device.id + '/pause',
+				access_token	: args.device.access_token,
+				json			: {
+					pause: true
+				}
+			}, function(err, result, body){
+				if( err ) return callback(err);
+				callback( null, true );
+			});
+		})
+
+		Homey.manager('flow').on('action.set_pause_false', function( callback, args ){
+			call({
+				method			: 'POST',
+				path			: '/thermostat/' + args.device.id + '/pause',
+				access_token	: args.device.access_token,
+				json			: {
+					pause: false
+				}
+			}, function(err, result, body){
+				if( err ) return callback(err);
+				callback( null, true );
+			});
+		})
+
+		Homey.manager('flow').on('action.set_outside_temperature', function( callback, args ){
+			call({
+				method			: 'PUT',
+				path			: '/thermostat/' + args.device.id,
+				access_token	: args.device.access_token,
+				json			: {
+					outside_temperature: args.outside_temperature
+				}
+			}, function(err, result, body){
+				if( err ) return callback(err);
+				callback( null, true );
+			});
+		})
 	},
-	
+
 	capabilities: {
 		target_temperature: {
-			get: function( device, callback ){				
-				getThermosmartInfo( device, function( err, info ){
-					callback( err, info.target_temperature );
-				});
+			get: function( device_data, callback ){
+
+				var device = devices[ device_data.id ];
+				if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
+
+				callback( null, device.state.target_temperature );
 			},
-			set: function( device, target_temperature, callback ){
-				
-				if( target_temperature < 5 ) target_temperature = 5;
-				if( target_temperature > 30 ) target_temperature = 30;
-				
-				target_temperature = roundHalf( target_temperature );
-				
-				setThermosmartInfo( device, {
-					target_temperature: target_temperature
-				}, callback)
-				self.realtime(device, 'target_temperature', target_temperature)			
+			set: function( device_data, target_temperature, callback ){
+
+				var device = devices[ device_data.id ];
+				if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
+
+				// limit temperature
+				if( target_temperature < 5 ) 	target_temperature = 5;
+				if( target_temperature > 30 ) 	target_temperature = 30;
+
+				// update if different
+				if( target_temperature != device.state.target_temperature ) {
+
+					device.state.target_temperature = target_temperature;
+
+					updateThermosmart( device_data, {
+						target_temperature: target_temperature
+					});
+
+					self.realtime(device_data, 'target_temperature', target_temperature)
+				}
+
+				callback( null, device.state.target_temperature );
 			}
 		},
 		measure_temperature: {
-			get: function( device, callback ){
-				getThermosmartInfo( device, function( err, info ){
-					callback( err, info.room_temperature );
-				});
+			get: function( device_data, callback ){
+
+				var device = devices[ device_data.id ];
+				if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
+
+				callback( null, device.state.measure_temperature );
 			}
 		}
 	},
-	
+
 	pair: function( socket ) {
-								
+
 		Homey.log('ThermoSmart pairing has started...');
-		
-		var access_token;
-		var thermostat;
-		
+
+		var device = {
+			data: {
+				id				: undefined,
+				access_token	: undefined
+			},
+			name: undefined
+		};
+
 		// request an authorization url, and forward it to the front-end
 		Homey.manager('cloud').generateOAuth2Callback(
-			
+
 			// this is the app-specific authorize url
 			api_url + "/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
-			
+
 			// this function is executed when we got the url to redirect the user to
 			function( err, url ){
 				Homey.log('Got url!', url);
 				socket.emit( 'url', url );
 			},
-			
+
 			// this function is executed when the authorization code is received (or failed to do so)
 			function( err, code ) {
-				
+
 				if( err ) {
 					Homey.error(err);
 					socket.emit( 'authorized', false )
 					return;
 				}
-				
-				Homey.log('Got authorization code!', code);
-			
-				// swap the authorization code for a token					
+
+				Homey.log('Got authorization code!');
+
+				// swap the authorization code for a token
 				request.post( api_url + '/oauth2/token', {
 					form: {
 						'client_id'		: Homey.env.CLIENT_ID,
@@ -116,82 +153,87 @@ var self = module.exports = {
 					json: true
 				}, function( err, response, body ){
 					if( err || body.error ) return socket.emit( 'authorized', false );
-					Homey.log('Authorized')
-					access_token	= body.access_token;
-					thermostat		= body.thermostat;
+					Homey.log('Authorized!')
+
+					device.name 				= body.thermostat;
+					device.data.id 				= body.thermostat;
+					device.data.access_token 	= body.access_token;
+
 					socket.emit( 'authorized', true );
 				});
 			}
 		)
-	
+
 		socket.on('list_devices', function( data, callback ) {
-						
-			var devices = [{
-				data: {
-					id				: thermostat,
-					access_token	: access_token
-				},
-				name: thermostat
-				
-			}];
-			
-			callback( null, devices );
-							
+			callback( null, [ device ] );
+
 		});
-		
-		socket.on('disconnect', function( data, callback ){
-			console.log('disconnect!!!', arguments)
+
+		socket.on('add_device', function( device_data, callback ){
+			initDevice( device_data );
+			callback( null, true );
 		})
+
 	}
-	
+
 }
 
-var thermosmartInfoCache = {
-	updated_at: new Date("January 1, 1970"),
-	data: {}
-};
+/*
+	Initialize a device by creating an object etc
+*/
+function initDevice( device_data ) {
 
-function getThermosmartInfo( device, force, callback ) {
-	
-	if( typeof force == 'function' ) callback = force;
-	
-	// serve the cache for at maximum 5 minutes
-	if( !force && ((new Date) - thermosmartInfoCache.updated_at) < 1000 * 60 * 5 ) {
-		callback(thermosmartInfoCache.data);
-	} else {
-		call({
-			path			: '/thermostat/' + device.id,
-			access_token	: device.access_token
-		}, function(err, result, body){
-			if( err ) return callback(err);
-			
-			thermosmartInfoCache.updated_at = new Date();
-			thermosmartInfoCache.data = body;
-			
-			callback( null, thermosmartInfoCache.data );
-			
-		});
+	// create the device object
+	devices[ device_data.id ] = {
+		state: {
+			target_temperature: false,
+			measure_temperature: false
+		}
 	}
-	
+
+	// add webhook listener
+	registerWebhook( device_data );
+
+	// get initial state
+	call({
+		path			: '/thermostat/' + device_data.id,
+		access_token	: device_data.access_token
+	}, function(err, result, body){
+		if( err ) return callback(err);
+
+		// set state
+		devices[ device_data.id ].state.target_temperature 	= body.target_temperature;
+		devices[ device_data.id ].state.measure_temperature = body.room_temperature;
+
+	});
+
 }
 
-function setThermosmartInfo( device, json, callback ) {
+/*
+	Update a thermosmart to their API
+*/
+function updateThermosmart( device_data, json, callback ) {
+	callback = callback || function(){}
+
 	call({
 		method			: 'PUT',
-		path			: '/thermostat/' + device.id,
-		access_token	: device.access_token,
+		path			: '/thermostat/' + device_data.id,
+		access_token	: device_data.access_token,
 		json			: json
 	}, function(err, result, body){
 		if( err ) return callback(err);
-		
-		// update thermosmart info
-		getThermosmartInfo( device, true, callback );
-		
-	});	
+		callback( null, true );
+
+		devices[ device_data.id ].lastUpdated = new Date();
+	});
 }
 
+/*
+	Make an API call
+*/
 function call( options, callback ) {
-		
+	callback = callback || function(){}
+
 	// create the options object
 	options = extend({
 		path			: api_url + '/',
@@ -199,11 +241,11 @@ function call( options, callback ) {
 		access_token	: false,
 		json			: true
 	}, options);
-	
-	
+
+
 	// remove the first trailing slash, to prevent `.nl//foo`
 	if( options.path.charAt(0) === '/' ) options.path = options.path.substring(1);
-	
+
 	// make the request
 	request({
 		method: options.method,
@@ -213,15 +255,40 @@ function call( options, callback ) {
 			'Authorization': 'Bearer ' + options.access_token
 		}
 	}, callback);
-	
+
 }
 
-function registerWebhook( thermosmart_id, callbackMessage, callback ) {
-	Homey.manager('cloud').registerWebhook( Homey.env.WEBHOOK_ID, Homey.env.WEBHOOK_SECRET, {
-		thermosmart_id: thermosmart_id
-	}, callbackMessage, callback);
-}
+/*
+	Listen on a webook
+	TODO: test with > 1 devices
+*/
+function registerWebhook( device_data ) {
 
-function roundHalf(num) {
-    return Math.round(num*2)/2;
+	Homey.manager('cloud').registerWebhook(Homey.env.WEBHOOK_ID, Homey.env.WEBHOOK_SECRET, {
+		thermosmart_id: device_data.id
+	}, function onMessage( args ){
+
+		Homey.log("Incoming webhook for Thermosmart", device_data.id, args);
+
+		var device = devices[ device_data.id ];
+		if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
+
+		if( ((new Date) - device.lastUpdated) < (30 * 1000) ) {
+			return Homey.log("Ignored webhook, just updated the Thermostat!");
+		}
+
+		// TODO: don't do this is just changed value
+		if( args.body.target_temperature && args.body.target_temperature != device.state.target_temperature ) {
+			device.state.target_temperature = args.body.target_temperature;
+			self.realtime(device_data, 'target_temperature', device.state.target_temperature)
+		}
+
+		if( args.body.room_temperature && args.body.room_temperature != device.state.measure_temperature ) {
+			device.state.measure_temperature = args.body.room_temperature;
+			self.realtime(device_data, 'target_temperature', device.state.measure_temperature)
+		}
+
+	}, function callback(){
+		Homey.log("Webhook registered for Thermosmart", device_data.id);
+	});
 }

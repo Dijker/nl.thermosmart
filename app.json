@@ -1,6 +1,6 @@
 {
 	"id": "nl.thermosmart",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"compatibility": "*",
 	"name": {
 		"en": "ThermoSmart"
@@ -48,8 +48,62 @@
 			]
 		}
 	],
+	"flow": {
+		"actions": [
+			{
+				"id": "set_pause_true",
+				"title": {
+					"en": "Pause ThermoSmart",
+					"nl": "Pauzeer ThermoSmart"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]
+			},
+			{
+				"id": "set_pause_false",
+				"title": {
+					"en": "Resume ThermoSmart",
+					"nl": "Hervat ThermoSmart"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]
+			},
+			{
+				"id": "set_outside_temperature",
+				"title": {
+					"en": "Set outside temperature",
+					"nl": "Zet buiten temperatuur"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					},
+					{
+						"name": "outside_temperature",
+						"type": "range",
+						"min": -50,
+						"max": 50,
+						"step": 0.5,
+						"label": " °C",
+						"labelDecimals": 1
+					}
+				]
+			}
+		]
+	},
 	"dependencies": {
-		"request": "*",
-		"extend": "*"
+		"request": "*"
 	}
 }
