@@ -277,7 +277,6 @@ function registerWebhook( device_data ) {
 			return Homey.log("Ignored webhook, just updated the Thermostat!");
 		}
 
-		// TODO: don't do this is just changed value
 		if( args.body.target_temperature && args.body.target_temperature != device.state.target_temperature ) {
 			device.state.target_temperature = args.body.target_temperature;
 			self.realtime(device_data, 'target_temperature', device.state.target_temperature)
@@ -285,7 +284,7 @@ function registerWebhook( device_data ) {
 
 		if( args.body.room_temperature && args.body.room_temperature != device.state.measure_temperature ) {
 			device.state.measure_temperature = args.body.room_temperature;
-			self.realtime(device_data, 'target_temperature', device.state.measure_temperature)
+			self.realtime(device_data, 'measure_temperature', device.state.measure_temperature)
 		}
 
 	}, function callback(){
