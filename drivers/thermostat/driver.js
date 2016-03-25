@@ -169,8 +169,8 @@ var self = module.exports = {
 
 		});
 
-		socket.on('add_device', function( device_data, callback ){
-			initDevice( device_data );
+		socket.on('add_device', function( device, callback ){
+			initDevice( device.data );
 			callback( null, true );
 		})
 
@@ -182,6 +182,8 @@ var self = module.exports = {
 	Initialize a device by creating an object etc
 */
 function initDevice( device_data ) {
+
+	console.log('initDevice', device_data);
 
 	// create the device object
 	devices[ device_data.id ] = {
