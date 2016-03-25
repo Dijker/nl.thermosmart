@@ -183,8 +183,6 @@ var self = module.exports = {
 */
 function initDevice( device_data ) {
 
-	console.log('initDevice', device_data);
-
 	// create the device object
 	devices[ device_data.id ] = {
 		state: {
