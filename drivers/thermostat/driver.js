@@ -174,6 +174,17 @@ var self = module.exports = {
 			callback( null, true );
 		})
 
+	},
+	
+	deleted: function( device_data ) {
+				
+		if( devices[ device_data.id ] ) {
+			if( devices[ device_data.id ].pollInterval ) {
+				clearInterval( devices[ device_data.id ].pollInterval );
+			}
+			delete devices[ device_data.id ];
+		}
+		
 	}
 
 }
@@ -193,20 +204,46 @@ function initDevice( device_data ) {
 
 	// add webhook listener
 	registerWebhook( device_data );
+	
+	// get initial state
+	getThermosmart( device_data );
+	
+	// update state every 15 mins
+	devices[ device_data.id ].pollInterval = setInterval(function(){
+		getThermosmart( device_data );
+	}, 1000 * 60 * 15);
 
+}
+
+/*
+	Get a Thermosmart's state
+*/
+function getThermosmart( device_data, callback ) {
+	callback = callback || function(){}
+
+	var device = devices[ device_data.id ];
+	if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
+	
 	// get initial state
 	call({
 		path			: '/thermostat/' + device_data.id,
 		access_token	: device_data.access_token
 	}, function(err, result, body){
-		if( err ) return callback(err);
+		if( err ) return callback(err);		
 
-		// set state
-		devices[ device_data.id ].state.target_temperature 	= body.target_temperature;
-		devices[ device_data.id ].state.measure_temperature = body.room_temperature;
+		if( device.state.target_temperature != body.target_temperature ) {
+			device.state.target_temperature 	= body.target_temperature;
+			self.realtime(device_data, 'target_temperature', device.state.target_temperature)
+		}
+		
+		if( device.state.measure_temperature != body.room_temperature ) {
+			device.state.measure_temperature  = body.room_temperature;
+			self.realtime(device_data, 'measure_temperature', device.state.measure_temperature)
+		}
+		
+		callback( null, true );
 
 	});
-
 }
 
 /*
