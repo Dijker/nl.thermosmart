@@ -66,8 +66,6 @@ var self = module.exports = {
 		target_temperature: {
 			get: function( device_data, callback ){
 
-				console.log('get', device_data)
-
 				var device = devices[ device_data.id ];
 				if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
 
