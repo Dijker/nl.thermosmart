@@ -16,9 +16,6 @@ var self = module.exports = {
 
 		devices_data.forEach(initDevice);
 
-		// we're ready
-		callback();
-
 		Homey.manager('flow').on('action.set_pause_true', function( callback, args ){
 			call({
 				method			: 'POST',
@@ -60,11 +57,16 @@ var self = module.exports = {
 				callback( null, true );
 			});
 		})
+
+		// we're ready
+		callback();
 	},
 
 	capabilities: {
 		target_temperature: {
 			get: function( device_data, callback ){
+
+				console.log('get', device_data)
 
 				var device = devices[ device_data.id ];
 				if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
@@ -118,73 +120,70 @@ var self = module.exports = {
 			name: undefined
 		};
 
-		// request an authorization url, and forward it to the front-end
-		Homey.manager('cloud').generateOAuth2Callback(
+		socket.on('start', function(){
 
-			// this is the app-specific authorize url
-			api_url + "/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
+			// request an authorization url, and forward it to the front-end
+			Homey.manager('cloud').generateOAuth2Callback(
 
-			// this function is executed when we got the url to redirect the user to
-			function( err, url ){
-				Homey.log('Got url!', url);
-				socket.emit( 'url', url );
-			},
+				// this is the app-specific authorize url
+				api_url + "/oauth2/authorize?response_type=code&client_id=" + Homey.env.CLIENT_ID + "&redirect_uri=" + redirect_uri,
 
-			// this function is executed when the authorization code is received (or failed to do so)
-			function( err, code ) {
+				// this function is executed when we got the url to redirect the user to
+				function( err, url ){
+					Homey.log('Got url!', url);
+					socket.emit( 'url', url );
+				},
 
-				if( err ) {
-					Homey.error(err);
-					socket.emit( 'authorized', false )
-					return;
+				// this function is executed when the authorization code is received (or failed to do so)
+				function( err, code ) {
+					console.log('err, code', err, code)
+
+					if( err ) {
+						Homey.error(err);
+						socket.emit( 'authorized', false )
+						return;
+					}
+
+					Homey.log('Got authorization code!');
+
+					// swap the authorization code for a token
+					request.post( api_url + '/oauth2/token', {
+						form: {
+							'client_id'		: Homey.env.CLIENT_ID,
+							'client_secret'	: Homey.env.CLIENT_SECRET,
+							'code'			: code,
+							'redirect_uri'	: redirect_uri,
+							'grant_type'	: 'authorization_code'
+						},
+						json: true
+					}, function( err, response, body ){
+						if( err || body.error ) return socket.emit( 'authorized', false );
+						Homey.log('Authorized!')
+
+						device.name 				= body.thermostat;
+						device.data.id 				= body.thermostat;
+						device.data.access_token 	= body.access_token;
+
+						socket.emit( 'authorized', true );
+					});
 				}
+			)
 
-				Homey.log('Got authorization code!');
-
-				// swap the authorization code for a token
-				request.post( api_url + '/oauth2/token', {
-					form: {
-						'client_id'		: Homey.env.CLIENT_ID,
-						'client_secret'	: Homey.env.CLIENT_SECRET,
-						'code'			: code,
-						'redirect_uri'	: redirect_uri,
-						'grant_type'	: 'authorization_code'
-					},
-					json: true
-				}, function( err, response, body ){
-					if( err || body.error ) return socket.emit( 'authorized', false );
-					Homey.log('Authorized!')
-
-					device.name 				= body.thermostat;
-					device.data.id 				= body.thermostat;
-					device.data.access_token 	= body.access_token;
-
-					socket.emit( 'authorized', true );
-				});
-			}
-		)
+		});
 
 		socket.on('list_devices', function( data, callback ) {
 			callback( null, [ device ] );
 
 		});
 
-		socket.on('add_device', function( device, callback ){
-			initDevice( device.data );
-			callback( null, true );
-		})
-
 	},
-	
+
+	added: function( device_data ) {
+		initDevice( device_data );
+	},
+
 	deleted: function( device_data ) {
-				
-		if( devices[ device_data.id ] ) {
-			if( devices[ device_data.id ].pollInterval ) {
-				clearInterval( devices[ device_data.id ].pollInterval );
-			}
-			delete devices[ device_data.id ];
-		}
-		
+		uninitDevice( device_data );
 	}
 
 }
@@ -197,21 +196,32 @@ function initDevice( device_data ) {
 	// create the device object
 	devices[ device_data.id ] = {
 		state: {
-			target_temperature: false,
-			measure_temperature: false
+			target_temperature	: null,
+			measure_temperature	: null
 		}
 	}
 
 	// add webhook listener
 	registerWebhook( device_data );
-	
+
 	// get initial state
 	getThermosmart( device_data );
-	
+
 	// update state every 15 mins
 	devices[ device_data.id ].pollInterval = setInterval(function(){
 		getThermosmart( device_data );
 	}, 1000 * 60 * 15);
+
+}
+
+function uninitDevice( device_data ) {
+
+	if( devices[ device_data.id ] ) {
+		if( devices[ device_data.id ].pollInterval ) {
+			clearInterval( devices[ device_data.id ].pollInterval );
+		}
+		delete devices[ device_data.id ];
+	}
 
 }
 
@@ -223,24 +233,24 @@ function getThermosmart( device_data, callback ) {
 
 	var device = devices[ device_data.id ];
 	if( typeof device == 'undefined' ) return callback( new Error("invalid_device") );
-	
+
 	// get initial state
 	call({
 		path			: '/thermostat/' + device_data.id,
 		access_token	: device_data.access_token
 	}, function(err, result, body){
-		if( err ) return callback(err);		
+		if( err ) return callback(err);
 
 		if( device.state.target_temperature != body.target_temperature ) {
 			device.state.target_temperature 	= body.target_temperature;
 			self.realtime(device_data, 'target_temperature', device.state.target_temperature)
 		}
-		
+
 		if( device.state.measure_temperature != body.room_temperature ) {
 			device.state.measure_temperature  = body.room_temperature;
 			self.realtime(device_data, 'measure_temperature', device.state.measure_temperature)
 		}
-		
+
 		callback( null, true );
 
 	});
