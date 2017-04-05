@@ -23,5 +23,9 @@ Homey.on('authorized', function( success, callback ){
 	}
 })
 
+Homey.on('error', function( err ){
+	Homey.alert( err, 'error' );
+})
+
 Homey.emit('start');
 </script>

@@ -16,6 +16,17 @@ var self = module.exports = {
 
 		devices_data.forEach(initDevice);
 
+		Homey.manager('flow').on('condition.is_paused', function( callback, args ){
+			call({
+				method			: 'GET',
+				path			: '/thermostat/' + args.device.id + '',
+				access_token	: args.device.access_token
+			}, function(err, result, body){
+				if( err ) return callback(err);
+				callback( null, body.source === 'pause' );
+			});
+		})
+
 		Homey.manager('flow').on('action.set_pause_true', function( callback, args ){
 			call({
 				method			: 'POST',
@@ -128,13 +139,14 @@ var self = module.exports = {
 
 				// this function is executed when we got the url to redirect the user to
 				function( err, url ){
+					if( err ) return socket.emit('error', err.message || err.toString());
+
 					Homey.log('Got url!', url);
 					socket.emit( 'url', url );
 				},
 
 				// this function is executed when the authorization code is received (or failed to do so)
 				function( err, code ) {
-					console.log('err, code', err, code)
 
 					if( err ) {
 						Homey.error(err);
