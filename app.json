@@ -1,6 +1,6 @@
 {
 	"id": "nl.thermosmart",
-	"version": "1.0.5",
+	"version": "1.0.8",
 	"compatibility": "*",
 	"name": {
 		"en": "ThermoSmart"
@@ -26,6 +26,13 @@
 			},
 			"class": "thermostat",
 			"capabilities": [ "target_temperature", "measure_temperature" ],
+			"capabilitiesOptions": {
+				"target_temperature": {
+					"min": 5,
+					"max": 30,
+					"step": 0.5
+				}
+			},
 			"images": {
 				"large": "drivers/thermostat/assets/images/large.png",
 				"small": "drivers/thermostat/assets/images/small.png"
@@ -36,19 +43,35 @@
 				},
 				{
 					"id": "list_devices",
-					"template": "list_devices",
+					"template": "list_devices_singular",
 					"navigation": {
-						"next": "add_stations"
+						"next": "add_devices"
 					}
 				},
 				{
-					"id": "add_stations",
+					"id": "add_devices",
 					"template": "add_devices"
 				}
 			]
 		}
 	],
 	"flow": {
+		"conditions": [
+			{
+				"id": "is_paused",
+				"title": {
+					"en": "Is !{{|not}} paused",
+					"nl": "Is !{{|niet}} gepauzeerd"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]
+			}
+		],
 		"actions": [
 			{
 				"id": "set_pause_true",
