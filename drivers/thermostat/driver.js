@@ -43,6 +43,9 @@ class ThermoSmartDriver extends Homey.Driver {
 					outside_temperature: 'auto'
 				});
 			});
+			
+		this._flowTriggerPaused = new Homey.FlowCardTriggerDevice('paused').register();
+		this._flowTriggerUnpaused = new Homey.FlowCardTriggerDevice('unpaused').register();
 		
 	}
 	
@@ -93,6 +96,15 @@ class ThermoSmartDriver extends Homey.Driver {
 			if( device ) devices.push(device);
 			callback(null, devices);
 		});
+	}
+	
+	triggerPaused( device, paused ) {
+		if( paused ) {
+			return this._flowTriggerPaused.trigger( device );
+		} else {
+			return this._flowTriggerUnpaused.trigger( device );
+		}
+		
 	}
 	
 }

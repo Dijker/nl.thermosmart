@@ -58,6 +58,36 @@
 		}
 	],
 	"flow": {
+		"triggers": [
+			{
+				"id": "paused",
+				"title": {
+					"en": "Has been paused",
+					"nl": "Is gepauzeerd"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]				
+			},
+			{
+				"id": "unpaused",
+				"title": {
+					"en": "Has been resumed",
+					"nl": "Is niet meer gepauzeerd"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]				
+			}
+		],
 		"conditions": [
 			{
 				"id": "is_paused",

@@ -97,13 +97,21 @@ class ThermoSmartDevice extends Homey.Device {
 		}			
 	}
 	
-	_onWebhookMessage( args ) {		
+	_onWebhookMessage( args ) {
+
 		if( args.body && args.body.room_temperature ) {
 			this.setCapabilityValue('measure_temperature', args.body.room_temperature);
 		}
 		
 		if( args.body && args.body.target_temperature ) {
 			this.setCapabilityValue('target_temperature', args.body.target_temperature);
+		}
+		
+		if( args.body && args.body.source ) {
+			let driver = this.getDriver();
+			driver.ready(() => {
+				driver.triggerPaused( this, args.body.source === 'pause' ).catch( this.error );
+			});
 		}
 	}
 	
