@@ -1,7 +1,8 @@
 {
 	"id": "nl.thermosmart",
-	"version": "1.0.8",
-	"compatibility": "*",
+	"version": "2.0.0",
+	"sdk": 2,
+	"compatibility": ">=1.5.0",
 	"name": {
 		"en": "ThermoSmart"
 	},
@@ -11,7 +12,7 @@
 	},
 	"author": {
 		"name": "Athom B.V.",
-		"website": "info@athom.com"
+		"email": "info@athom.com"
 	},
 	"category": "climate",
 	"images": {
@@ -39,7 +40,8 @@
 			},
 			"pair": [
 				{
-					"id": "start"
+					"id": "login_oauth2",
+					"template": "login_oauth2"
 				},
 				{
 					"id": "list_devices",
@@ -56,6 +58,36 @@
 		}
 	],
 	"flow": {
+		"triggers": [
+			{
+				"id": "paused",
+				"title": {
+					"en": "Has been paused",
+					"nl": "Is gepauzeerd"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]				
+			},
+			{
+				"id": "unpaused",
+				"title": {
+					"en": "Has been resumed",
+					"nl": "Is niet meer gepauzeerd"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]				
+			}
+		],
 		"conditions": [
 			{
 				"id": "is_paused",
@@ -123,10 +155,21 @@
 						"labelDecimals": 1
 					}
 				]
+			},
+			{
+				"id": "unset_outside_temperature",
+				"title": {
+					"en": "Unset outside temperature",
+					"nl": "Zet buiten temperatuur terug"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]
 			}
 		]
-	},
-	"dependencies": {
-		"request": "*"
 	}
 }
