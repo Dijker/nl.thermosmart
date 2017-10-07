@@ -125,6 +125,20 @@
 						"labelDecimals": 1
 					}
 				]
+			},
+			{
+				"id": "unset_outside_temperature",
+				"title": {
+					"en": "Unset outside temperature",
+					"nl": "Zet buiten temperatuur terug"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"filter": "driver_id=thermostat"
+					}
+				]
 			}
 		]
 	}

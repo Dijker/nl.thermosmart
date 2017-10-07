@@ -12,7 +12,7 @@ class ThermoSmartDevice extends Homey.Device {
 	
 	onInit() {
 		
-		this._accessToken = this.getData().access_token;
+		this._accessToken = this._getAccessToken();
 		this._id = this.getData().id;
 		this._api = new ThermoSmart(this._accessToken);
 		
@@ -28,6 +28,16 @@ class ThermoSmartDevice extends Homey.Device {
 		this._unregisterWebhook();
 	}
 	
+	_getAccessToken() {
+		let store = this.getStore();
+		let data = this.getData();
+		
+		if( store.access_token ) return store.access_token;
+		if( data.access_token ) return data.access_token;
+		return null;
+		
+	}
+	
 	/*
 		Thermostat methods
 	*/	
@@ -39,13 +49,17 @@ class ThermoSmartDevice extends Homey.Device {
 		return this._api.setThermostat( this._id, data );
 	}
 	
+	setThermostatPause( paused ) {
+		this._api.setThermostatPause( this._id, paused );
+	}
+	
 	/*
 		Capabilities
 	*/
 	_onCapabilityTargetTemperature( value ) {
 		return this.setThermostat({
 			target_temperature: value
-		}).then( console.log )
+		});
 	}
 	
 	_sync() {
@@ -83,9 +97,7 @@ class ThermoSmartDevice extends Homey.Device {
 		}			
 	}
 	
-	_onWebhookMessage( args ) {
-		this.log('_onWebhookMessage');
-		
+	_onWebhookMessage( args ) {		
 		if( args.body && args.body.room_temperature ) {
 			this.setCapabilityValue('measure_temperature', args.body.room_temperature);
 		}
