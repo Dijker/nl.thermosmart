@@ -1,12 +1,68 @@
-"use strict";
+'use strict';
 
-var path			= require('path');
+const Homey = require('homey');
+const ThermoSmart = require('../../lib/ThermoSmart.js');
 
-var request			= require('request');
-var extend			= require('util')._extend;
+class ThermoSmartDriver extends Homey.Driver {
+	
+	onInit() {
+				
+		// TODO Flow cards
+		
+	}
+	
+	onPair( socket ) {
+		
+		let device = undefined;
+		
+		const url = ThermoSmart.getOAuth2Url();
+		const oauth2Callback = new Homey.CloudOAuth2Callback(url);
+		oauth2Callback
+			.on('url', url => {
+				this.log('Got url', url);
+				socket.emit('url', url);
+			})
+			.on('code', code => {
+				this.log('Got authorization code');
+				
+				ThermoSmart.getToken(code)
+					.then( res => {
+						if( res.status !== 200 ) return socket.emit('error', 'Unknown error');
 
-var api_url			= 'https://api.thermosmart.com';
-var redirect_uri	= 'https://callback.athom.com/oauth2/callback/';
+						device = {
+							name: res.data.thermostat,
+							data: {
+								id: res.data.thermostat,
+								access_token: res.data.access_token,
+							}
+						}
+						
+						socket.emit('authorized');
+					})
+					.catch( err => {
+						this.error(err);
+						socket.emit('error', err);
+					});			
+				
+			})
+			.generate()
+			.catch( err => {
+				this.error(err);
+				socket.emit('error', err);
+			});
+			
+		socket.on('list_devices', ( data, callback ) => {
+			let devices = [];
+			if( device ) devices.push(device);
+			callback(null, devices);
+		});
+	}
+	
+}
+
+module.exports = ThermoSmartDriver;
+
+return;
 
 var devices = {};
 
