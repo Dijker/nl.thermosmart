@@ -78,7 +78,18 @@ class ThermoSmartDevice extends Homey.Device {
 		Webhook methods
 	*/
 	_registerWebhook() {
-		this._webhook = new Homey.CloudWebhook(WEBHOOK_ID, WEBHOOK_SECRET, { thermosmart_id: this._id });
+		
+		let ids = [];
+		let driver = this.getDriver();
+		driver.ready(() => {
+			driver.getDevices().forEach(device => {
+				let data = device.getData();
+				let id = data.id;
+				ids.push(id);
+			});
+		});
+		
+		this._webhook = new Homey.CloudWebhook(WEBHOOK_ID, WEBHOOK_SECRET, { thermosmart_id: ids });
 		this._webhook.on('message', this._onWebhookMessage.bind(this));
 		this._webhook.register()
 			.then(() => {
@@ -88,6 +99,8 @@ class ThermoSmartDevice extends Homey.Device {
 	}
 	
 	_unregisterWebhook() {
+		return;
+		
 		if( this._webhook ) {
 			this._webhook.unregister()
 			.then(() => {
@@ -98,6 +111,8 @@ class ThermoSmartDevice extends Homey.Device {
 	}
 	
 	_onWebhookMessage( args ) {
+		
+		if( args.body && args.body.thermostat !== this._id ) return;
 
 		if( args.body && args.body.room_temperature ) {
 			this.setCapabilityValue('measure_temperature', args.body.room_temperature);
