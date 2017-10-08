@@ -4,8 +4,6 @@ const Homey = require('homey');
 const ThermoSmart = require('../../lib/ThermoSmart.js');
 
 const API_URL = 'https://api.thermosmart.com';
-const WEBHOOK_ID = Homey.env.WEBHOOK_ID;
-const WEBHOOK_SECRET = Homey.env.WEBHOOK_SECRET;
 const POLL_INTERVAL = 1000 * 60 * 5; // 5 min
 
 class ThermoSmartDevice extends Homey.Device {
@@ -17,15 +15,9 @@ class ThermoSmartDevice extends Homey.Device {
 		this._api = new ThermoSmart(this._accessToken);
 		
 		this.registerCapabilityListener('target_temperature', this._onCapabilityTargetTemperature.bind(this));
-		
-		this._registerWebhook();
-		
+				
 		this._sync();
 		this._syncInterval = setInterval(this._sync.bind(this), POLL_INTERVAL);
-	}
-	
-	onDeleted() {
-		this._unregisterWebhook();
 	}
 	
 	_getAccessToken() {
@@ -36,6 +28,18 @@ class ThermoSmartDevice extends Homey.Device {
 		if( data.access_token ) return data.access_token;
 		return null;
 		
+	}
+	
+	onAdded() {
+		this.getDriver().ready(() => {
+			this.getDriver().registerWebhook();
+		});
+	}
+	
+	onDeleted() {
+		this.getDriver().ready(() => {
+			this.getDriver().registerWebhook();
+		});
 	}
 	
 	/*
@@ -72,62 +76,6 @@ class ThermoSmartDevice extends Homey.Device {
 				this.error(err);
 				this.setUnavailable(err);
 			})
-	}
-	
-	/*
-		Webhook methods
-	*/
-	_registerWebhook() {
-		
-		let ids = [];
-		let driver = this.getDriver();
-		driver.ready(() => {
-			driver.getDevices().forEach(device => {
-				let data = device.getData();
-				let id = data.id;
-				ids.push(id);
-			});
-		});
-		
-		this._webhook = new Homey.CloudWebhook(WEBHOOK_ID, WEBHOOK_SECRET, { thermosmart_id: ids });
-		this._webhook.on('message', this._onWebhookMessage.bind(this));
-		this._webhook.register()
-			.then(() => {
-				this.log('Webhook registered');
-			})
-			.catch( this.error );
-	}
-	
-	_unregisterWebhook() {
-		return;
-		
-		if( this._webhook ) {
-			this._webhook.unregister()
-			.then(() => {
-				this.log('Webhook unregistered');
-			})
-			.catch( this.error );
-		}			
-	}
-	
-	_onWebhookMessage( args ) {
-		
-		if( args.body && args.body.thermostat !== this._id ) return;
-
-		if( args.body && args.body.room_temperature ) {
-			this.setCapabilityValue('measure_temperature', args.body.room_temperature);
-		}
-		
-		if( args.body && args.body.target_temperature ) {
-			this.setCapabilityValue('target_temperature', args.body.target_temperature);
-		}
-		
-		if( args.body && args.body.source ) {
-			let driver = this.getDriver();
-			driver.ready(() => {
-				driver.triggerPaused( this, args.body.source === 'pause' ).catch( this.error );
-			});
-		}
 	}
 	
 }
