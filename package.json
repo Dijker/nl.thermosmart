@@ -1,0 +1,23 @@
+{
+  "name": "nl.thermosmart",
+  "version": "1.0.0",
+  "description": "Control your ThermoSmart thermostat from Homey.",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.16.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/athombv/nl.thermosmart.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/athombv/nl.thermosmart/issues"
+  },
+  "homepage": "https://github.com/athombv/nl.thermosmart#readme"
+}
