@@ -68,7 +68,8 @@ class ThermoSmartDevice extends Homey.Device {
 	
 	_sync() {
 		this.getThermostat()
-			.then( res => {				
+			.then( res => {			
+				this.setAvailable();
 				this.setCapabilityValue('target_temperature', res.target_temperature);
 				this.setCapabilityValue('measure_temperature', res.room_temperature);
 			})
