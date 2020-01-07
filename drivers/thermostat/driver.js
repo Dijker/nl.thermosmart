@@ -136,7 +136,7 @@ class ThermoSmartDriver extends Homey.Driver {
 			
 			})
 			.catch(err => {
-				this.error( err );
+				this.error( 'Error registering webhook', err );
 			})
 	}
 	
@@ -152,8 +152,7 @@ class ThermoSmartDriver extends Homey.Driver {
 		return Promise.resolve();
 	}
 	
-	_onWebhookMessage( args ) {
-		
+	_onWebhookMessage( args ) {		
 		if( !args.body || !args.body.thermostat ) return;
 		
 		let thermostatId = args.body.thermostat;

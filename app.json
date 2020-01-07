@@ -1,7 +1,8 @@
 {
 	"id": "nl.thermosmart",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"sdk": 2,
+	"brandColor": "#FF5121",
 	"compatibility": ">=1.5.0",
 	"name": {
 		"en": "ThermoSmart"
